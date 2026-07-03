@@ -6,7 +6,7 @@
 
 [![PyPI Version](https://img.shields.io/pypi/v/releasewave.svg)](https://pypi.org/project/releasewave/)
 [![Python Versions](https://img.shields.io/pypi/pyversions/releasewave.svg)](https://pypi.org/project/releasewave/)
-[![GitHub Actions](https://img.shields.io/github/actions/workflow/status/sahaj33-op/releasewave/release-notes.yml?branch=main)](https://github.com/sahaj33-op/releasewave/actions)
+[![GitHub Actions](https://img.shields.io/github/actions/workflow/status/sizwinz/releasewave/release-notes.yml?branch=main)](https://github.com/sizwinz/releasewave/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 **[Documentation](#usage) • [GitHub Action](#github-action) • [Configuration](#configuration) • [Contributing](#contributing)**
@@ -79,7 +79,7 @@ jobs:
           fetch-depth: 0 # Required to extract git history
 
       - name: Run ReleaseWave
-        uses: sahaj33-op/releasewave@main
+        uses: sizwinz/releasewave@main
         env:
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
         with:

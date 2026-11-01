@@ -1,150 +1,259 @@
 <div align="center">
 
-# 🌊 ReleaseWave
+<img src="assets/releasewave-logo.svg" alt="ReleaseWave — three flowing blue and cyan waves" width="144" />
 
-**AI-powered release notes, changelogs, and promotional tweets straight from your Git history.**
+# ReleaseWave
 
-[![PyPI Version](https://img.shields.io/pypi/v/releasewave.svg)](https://pypi.org/project/releasewave/)
-[![Python Versions](https://img.shields.io/pypi/pyversions/releasewave.svg)](https://pypi.org/project/releasewave/)
-[![GitHub Actions](https://img.shields.io/github/actions/workflow/status/sizwinz/releasewave/release-notes.yml?branch=main)](https://github.com/sizwinz/releasewave/actions)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+### Your code changed. Let your release notes catch up.
 
-**[Documentation](#usage) • [GitHub Action](#github-action) • [Configuration](#configuration) • [Contributing](#contributing)**
+**An AI-powered changelog generator that understands real Git diffs — not just commit messages.**
+
+Turn your changes into developer changelogs, user-facing release notes, and launch announcements from one command.
+
+[![PyPI](https://img.shields.io/pypi/v/releasewave?style=flat-square&label=PyPI&color=2563eb)](https://pypi.org/project/releasewave/)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-0ea5e9?style=flat-square&logo=python&logoColor=white)](pyproject.toml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-334155?style=flat-square)](LICENSE)
+[![GitHub Action](https://img.shields.io/badge/GitHub-Action-2563eb?style=flat-square&logo=githubactions&logoColor=white)](action.yml)
+
+**[Quick start](#quick-start) · [Features](#why-releasewave) · [CLI](#command-line-reference) · [GitHub Action](#github-action) · [Configuration](#configuration)**
 
 </div>
 
 ---
 
-## ⚡️ What is ReleaseWave?
+## From code changes to a clear release story
 
-Writing release notes is tedious. **ReleaseWave** automates the process by acting as an agentic pipeline between your repository and Large Language Models. 
+Commit messages often describe *what someone typed*, not *what changed for your users*. ReleaseWave reads the commits **and the actual code diffs** between two Git references, analyzes them with an LLM, and writes the kind of update each audience needs.
 
-It reads your local Git history, smartly chunks large diffs to avoid token limits, and passes them through an LLM to generate polished release artifacts—whether you need a highly technical developer changelog, user-friendly release notes, or a hype tweet for your next launch.
+<div align="center">
 
-### ✨ Key Features
-*   **🧠 Smart Context Chunking:** Handles massive pull requests and diffs without overflowing LLM context windows.
-*   **🔌 Dual Functionality:** Run it locally as a Python CLI or plug it directly into your CI/CD pipeline as a GitHub Action.
-*   **🎨 Highly Customizable:** Define your own prompts, models, and formatting rules via a simple `.rwave.yml` file.
-*   **🔒 Domain Isolated:** Built with a clean architecture that strictly separates git extraction, data processing, and LLM inference.
+```text
+Git commits + diffs  →  Context-aware analysis  →  Release-ready writing
+                                                   ├─ Developer changelog
+                                                   ├─ User release notes
+                                                   └─ Launch announcement
+```
+
+</div>
+
+### Three outputs. One workflow.
+
+| Audience | Generated file | What it contains |
+|:--|:--|:--|
+| **Developers** | `CHANGELOG-developer.md` | Technical changes, fixes, and relevant implementation details |
+| **Users** | `RELEASE-NOTES.md` | Clear, readable descriptions of what's new and improved |
+| **Community** | `TWEET.txt` | A concise, shareable release announcement |
+
+See real output samples: **[Developer changelog](examples/CHANGELOG-developer.md)** · **[Release notes](examples/RELEASE-NOTES.md)** · **[Announcement](examples/TWEET.txt)**
+
+## Why ReleaseWave?
+
+| | |
+|:--|:--|
+| **Diff-first understanding**<br>Analyzes the underlying file changes instead of relying on perfectly formatted commits. | **Smart context handling**<br>Breaks large diffs into manageable chunks for model analysis. |
+| **Write once, reach everyone**<br>Generate technical, user-friendly, and announcement-ready versions in a single run. | **Model flexibility**<br>Choose your LLM through LiteLLM, including supported hosted or local providers. |
+| **CLI + GitHub Actions**<br>Use it when you need it locally or include it in a release workflow. | **Monorepo-aware**<br>Detects common package layouts and can produce output for individual packages. |
 
 ---
 
-## 🚀 Quick Start
+## Quick start
 
-### Installation
+**Requirements:** Python 3.10+, Git, an existing Git repository, and access to an LLM provider (or a locally configured model).
 
-Install ReleaseWave via `pip`:
-
-```bash
-pip install releasewave
-```
-
-*Requires Python 3.8+*
-
-### CLI Usage
-
-Navigate to your git repository and run the CLI. By default, ReleaseWave will analyze the latest commits and generate standard release notes.
+### 1. Install
 
 ```bash
-# Generate release notes for the latest tag
-rwave generate
-
-# Generate specific outputs
-rwave generate --output tweet
-rwave generate --output changelog --since v1.0.0
+python -m pip install releasewave
 ```
+
+The installed commands are `rwave` and `releasewave`.
+
+### 2. Configure your model credentials
+
+The default model is `gemini/gemini-2.5-flash`. Set its provider key in your shell:
+
+```bash
+# macOS / Linux
+export GEMINI_API_KEY="your-api-key"
+```
+
+```powershell
+# Windows PowerShell
+$env:GEMINI_API_KEY = "your-api-key"
+```
+
+You can also use `RWAVE_API_KEY` as a model-independent override, or configure another provider through `--model`. **Never commit API keys to your repository.**
+
+### 3. Generate your release notes
+
+Run from the repository whose changes you want to summarize:
+
+```bash
+rwave generate v1.0.0 HEAD
+```
+
+Replace `v1.0.0` with an existing starting tag, branch, or commit SHA in **your** repository. `HEAD` refers to the latest checked-out commit.
+
+ReleaseWave writes its three audience-specific files to the current directory by default. If this is your first release, use your initial commit SHA as the starting ref:
+
+```bash
+git rev-list --max-parents=0 HEAD
+# Copy the returned SHA, then:
+rwave generate <initial-commit-sha> HEAD
+```
+
+> **Tip:** Your working tree must have commits to compare. ReleaseWave needs *two* Git references; running `rwave generate` with no arguments does not generate a release.
 
 ---
 
-## 🤖 GitHub Action
+## Command-line reference
 
-Automate your release process by adding ReleaseWave directly to your GitHub Actions.
+```bash
+# Create all three standard outputs
+rwave generate v1.0.0 HEAD
 
-Create a file at `.github/workflows/release-notes.yml`:
+# Generate only selected audiences
+rwave generate v1.0.0 HEAD --audiences developer,user
+
+# Write to another directory and export structured analysis
+rwave generate v1.0.0 HEAD --output ./release-artifacts --json
+
+# Choose a supported model
+rwave generate v1.0.0 HEAD --model gpt-4o-mini
+
+# Prepend the developer changelog to CHANGELOG.md
+rwave generate v1.0.0 HEAD --update-changelog
+
+# Generate a starter .rwave.yml in your current directory
+rwave init
+
+# Show model suggestions
+rwave models
+```
+
+| Option | Purpose |
+|:--|:--|
+| `--model, -m` | Select a model using a LiteLLM-compatible identifier |
+| `--audiences, -a` | Comma-separated `developer`, `user`, or `tweet` |
+| `--output, -o` | Directory for generated files |
+| `--format, -f` | Output format: `markdown`, `json`, or `text` |
+| `--repo, -r` | Path to the target Git repository |
+| `--update-changelog` | Prepend generated developer notes to `CHANGELOG.md` |
+| `--json` | Export full analysis to `releasewave-output.json` |
+| `--quiet, -q` | Suppress generated text on standard output |
+
+Run `rwave generate --help` for the full command reference.
+
+---
+
+## GitHub Action
+
+ReleaseWave is also packaged as a [composite GitHub Action](action.yml). For an example you can trigger manually, add `.github/workflows/release-notes.yml` to your repository:
 
 ```yaml
-name: Generate Release Notes
+name: Generate release notes
 
 on:
-  release:
-    types: [created]
+  workflow_dispatch:
 
 jobs:
-  releasewave:
+  release-notes:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
+      - name: Checkout full Git history
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Required to extract git history
+          fetch-depth: 0
 
-      - name: Run ReleaseWave
-        uses: sizwinz/releasewave@main
-        env:
-          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+      - name: Generate release notes
+        uses: sizwinz/releasewave@v1.0.0
         with:
-          output-type: 'release-notes'
-          publish-to-pr: true
+          from_ref: v1.0.0
+          to_ref: HEAD
+          model: gemini/gemini-2.5-flash
+          audiences: developer,user,tweet
+          output_dir: .
+          api_key: ${{ secrets.GEMINI_API_KEY }}
 ```
+
+Before running, add **`GEMINI_API_KEY`** to your repository's **Settings → Secrets and variables → Actions** and replace `from_ref` with a reference that exists in the repository being checked out. `v1.0.0` is an existing ReleaseWave Action tag; the `from_ref` shown above is just a Git-history example and must be adapted to your project.
+
+For a release-triggered integration with publishing steps, see the [repository's workflow example](.github/workflows/release-notes.yml).
 
 ---
 
-## ⚙️ Configuration
+## Configuration
 
-ReleaseWave is highly configurable. Create a `.rwave.yml` file in the root of your repository to override defaults. 
-
-*(See the `.rwave.yml.example` file for a full list of options).*
+Create a `.rwave.yml` manually, or run `rwave init` to generate one. All sections below are optional.
 
 ```yaml
 # .rwave.yml
-model:
-  provider: openai # or anthropic, gemini, etc.
-  name: gpt-4-turbo
-  temperature: 0.7
+llm:
+  model: gemini/gemini-2.5-flash
+  temperature: 0.3
+  token_budget: 120000
 
 output:
+  directory: ./release-artifacts
+  audiences:
+    - developer
+    - user
+    - tweet
   format: markdown
-  destinations:
-    - examples/CHANGELOG-developer.md
-    - examples/RELEASE-NOTES.md
+  update_changelog: false
 
-chunking:
-  max_tokens: 8000
-  strategy: semantic
+monorepo:
+  enabled: true
+
+filters:
+  exclude_patterns:
+    - "*.lock"
+    - "dist/*"
+    - "node_modules/*"
 ```
 
----
+Configuration precedence is **CLI options → environment variables → `.rwave.yml` → defaults**. Use `RWAVE_MODEL` to override the configured model or `RWAVE_API_KEY` to pass a universal model key.
 
-## 📂 Architecture Overview
-
-ReleaseWave is built as a modular pipeline to ensure stability and extensibility:
-
-1.  **Extraction (`git_ops.py`):** Pulls raw diffs, commits, and tags from the local filesystem.
-2.  **Processing (`chunker.py`):** Slices text mathematically to ensure the LLM receives optimal context without hallucinating.
-3.  **Generation (`llm.py` & `prompts.py`):** Assembles the payload and securely interfaces with the LLM provider.
-4.  **Presentation (`output.py`):** Formats the AI response into Markdown or raw text.
+Browse the complete [example configuration](.rwave.yml.example) for additional options, including custom instructions, diff filtering, and monorepo directories.
 
 ---
 
-## 🤝 Contributing
+## How it works
 
-Contributions are always welcome! Whether it's adding support for a new LLM provider, improving the chunking algorithm, or fixing a typo.
+1. **Extract:** `git_ops.py` resolves the supplied refs, collects commits, and reads the corresponding file diffs.
+2. **Prepare:** `chunker.py` organizes large changes into model-sized context.
+3. **Analyze:** `llm.py` and `prompts.py` interpret the changes and produce audience-specific content.
+4. **Deliver:** `output.py` writes Markdown or text artifacts, with optional JSON analysis export and changelog updates.
 
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+ReleaseWave can fall back to commit-message analysis if diff-based LLM analysis fails. As with any AI-generated release notes, **review the output before publishing**, especially for breaking changes, security fixes, and customer-facing claims.
 
-Please ensure you run the test suite in the `tests/` directory before opening a PR!
+> **Privacy note:** With a hosted LLM, analyzed code and commit information may be sent to your chosen model provider. Review the diff filters and your provider's data-handling policy before running on sensitive repositories.
 
 ---
 
-## ⭐️ Support the Project
+## Development & contributing
 
-If you find ReleaseWave helpful in automating your workflow, please consider **giving the repository a star ⭐️**! It helps the project gain visibility and supports the long-term goal of bringing this tool to more open-source maintainers.
+Contributions, bug reports, documentation improvements, and new provider support are welcome.
 
-## 📄 License
+```bash
+git clone https://github.com/sizwinz/releasewave.git
+cd releasewave
 
-Distributed under the MIT License. See `LICENSE` for more information.
+python -m pip install -e ".[dev]"
+python -m pytest
+ruff check .
 ```
+
+To propose a change, create a feature branch, run the relevant tests, and open a [pull request](https://github.com/sizwinz/releasewave/pulls). Found a problem? [Open an issue](https://github.com/sizwinz/releasewave/issues).
+
+---
+
+<div align="center">
+
+**Built for developers who would rather ship code than write changelogs.**
+
+[PyPI](https://pypi.org/project/releasewave/) · [Examples](examples/) · [Issues](https://github.com/sizwinz/releasewave/issues) · [MIT License](LICENSE)
+
+If ReleaseWave helps your release workflow, consider giving the repository a ⭐.
+
+</div>
